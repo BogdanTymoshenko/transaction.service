@@ -1,0 +1,41 @@
+apply plugin: 'java'
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+
+    def v = [
+            spring: '4.0.6.RELEASE',
+            shiro: '1.2.3',
+            jackson: '2.3.3',
+            slf4j: '1.7.7'
+    ]
+    ext.v = v
+
+    dependencies {
+        testCompile 'junit:junit:4.11'
+        testCompile 'org.powermock:powermock-mockito-release-full:1.4.9'
+        testCompile 'org.powermock:powermock-module-junit4-rule-agent:1.4.9'
+
+
+        compile "joda-time:joda-time:2.4"
+
+        compile "org.apache.shiro:shiro-core:$v.shiro"
+        compile "org.apache.shiro:shiro-web:$v.shiro"
+        compile "org.apache.shiro:shiro-spring:$v.shiro"
+        compile 'log4j:log4j:1.2.17'
+        compile "org.slf4j:slf4j-log4j12:$v.slf4j"
+
+        compile "org.springframework:spring-core:$v.spring"
+        compile "org.springframework:spring-context:$v.spring"
+        compile "org.springframework:spring-beans:$v.spring"
+        compile "org.springframework:spring-test:$v.spring"
+    }
+
+    version = '0.1'
+
+}
