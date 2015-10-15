@@ -1,4 +1,4 @@
-package ua.org.amicablesoft.ts.rest.data;
+package ua.org.amicablesoft.ts.rest.responce;
 
 /**
  * Created by bogdan on 10/14/15.

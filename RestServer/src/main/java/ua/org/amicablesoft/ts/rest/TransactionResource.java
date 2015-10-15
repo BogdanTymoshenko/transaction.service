@@ -4,10 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ua.org.amicablesoft.ts.core.service.TransactionService;
 import ua.org.amicablesoft.ts.core.model.Transaction;
-import ua.org.amicablesoft.ts.rest.data.TransactionAmountSum;
+import ua.org.amicablesoft.ts.rest.responce.Status;
+import ua.org.amicablesoft.ts.rest.responce.TransactionAmountSum;
+import ua.org.amicablesoft.ts.rest.responce.TransactionSaveResponse;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 /**
@@ -44,10 +45,11 @@ public class TransactionResource {
 
     @PUT
     @Consumes("application/json")
+    @Produces("application/json")
     @Path("/transaction/{transaction_id}")
-    public Response saveTransaction(@PathParam("transaction_id")long transactionId, Transaction transaction) {
+    public TransactionSaveResponse saveTransaction(@PathParam("transaction_id")long transactionId, Transaction transaction) {
         transaction.setId(transactionId);
         transactionService.save(transaction);
-        return Response.status(Response.Status.OK).build();
+        return new TransactionSaveResponse(Status.ok);
     }
 }
