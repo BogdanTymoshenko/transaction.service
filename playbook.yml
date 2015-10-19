@@ -84,4 +84,4 @@
 
     - name: Deploy Transaction service
       action: shell mkdir /var/lib/tomcat7/webapps/transaction.service/;
-       cp /tmp/transaction.service/RestServer/build/libs/RestServer-0.1.war /var/lib/tomcat7/webapps/transaction.service/
+       cp -r /tmp/transaction.service/RestServer/build/exploded/* /var/lib/tomcat7/webapps/transaction.service/
