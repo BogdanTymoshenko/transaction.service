@@ -1,0 +1,87 @@
+# -*- mode: yaml-*-
+# vi: set ft=yaml sw=2 ts=2 :
+
+- name: Configure java8, tomcat7, checkout project
+  hosts: all
+  sudo: True
+  tasks:
+    - name: Set locale
+      lineinfile: dest=/etc/default/locale line="LC_ALL=C"
+   
+    - name: Create java repo list
+      action: shell echo 'deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main' >/etc/apt/sources.list.d/java.list
+
+    - name: Add repo key
+      action: command apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886
+
+    - name: Accept java license
+      action: shell echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | debconf-set-selections
+
+    - name: Ensure apt cache is up to date
+      apt: update_cache=yes
+  
+    - name: Install java 8
+      action: command apt-get install oracle-java8-installer -y
+
+    - name: Set JAVA_HOME
+      lineinfile: dest=/etc/environment line=JAVA_HOME=“/usr/lib/jvm/java-8-oracle”
+
+    - name: Update env
+      action: shell source /etc/environment;export JAVA_HOME
+
+    - name: Install postgresql
+      apt: pkg={{item}} state=installed
+      with_items:
+       - postgresql
+       - postgresql-contrib 
+       - libpq-dev
+       - python-psycopg2
+
+    - name: Install tomcat
+      apt: name=tomcat7
+
+    - name: Update tomcat config
+      lineinfile: dest=/etc/default/tomcat7 regexp=^#JAVA_HOME= line=JAVA_HOME=/usr/lib/jvm/java-8-oracle
+
+    - name: Restart tomcat
+      action: shell service tomcat7 restart
+
+    - name: Install git
+      apt: name=git
+
+    - name: Checkout Transaction service
+      git: repo=https://github.com/BogdanTymoshenko/transaction.service.git dest=/tmp/transaction.service
+
+- name: Prepare db
+  hosts: all
+  sudo: True
+  sudo_user: postgres
+
+  vars:
+    dbname: transaction_service_db
+    dbuser: postgres
+    dbpassword: postgres
+
+  tasks:
+  - name: ensure database is created
+    postgresql_db: name={{dbname}}
+
+  - name: ensure user has access to database
+    postgresql_user: db={{dbname}} name={{dbuser}} password={{dbpassword}} priv=ALL
+
+  - name: ensure user does not have unnecessary privilege
+    postgresql_user: name={{dbuser}} role_attr_flags=NOSUPERUSER,NOCREATEDB
+
+  - name: Create db schema
+    action: shell cd /tmp/transaction.service/Storage.PostgreSQL/scripts; psql -f ./create_all.sql transaction_service_db
+
+- name: Build and deploy
+  hosts: all
+  sudo: True
+  tasks:
+    - name: Build Transaction service
+      action: shell cd /tmp/transaction.service;./gradlew war
+
+    - name: Deploy Transaction service
+      action: shell mkdir /var/lib/tomcat7/webapps/transaction.service/;
+       cp /tmp/transaction.service/RestServer/build/libs/RestServer-0.1.war /var/lib/tomcat7/webapps/transaction.service/
