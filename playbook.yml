@@ -4,16 +4,26 @@
 - name: Configure java8, tomcat7, checkout project
   hosts: all
   sudo: True
+  handlers:
+    - name: Restart tomcat
+      service:
+        name: tomcat7
+        state: restarted
+        enabled: yes
   tasks:
     - name: Set locale
       lineinfile: dest=/etc/default/locale line="LC_ALL=C"
    
+    # FIXME: see lineinfile command or even apt-get repo
     - name: Create java repo list
       action: shell echo 'deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main' >/etc/apt/sources.list.d/java.list
 
+      # FIXME: i guess the same
     - name: Add repo key
       action: command apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886
 
+
+      # FIXME: write shell instead of shell
     - name: Accept java license
       action: shell echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | debconf-set-selections
 
@@ -23,6 +33,7 @@
     - name: Install java 8
       action: command apt-get install oracle-java8-installer -y
 
+    # FIXME: there is a better way to that
     - name: Set JAVA_HOME
       lineinfile: dest=/etc/environment line=JAVA_HOME=“/usr/lib/jvm/java-8-oracle”
 
@@ -40,18 +51,28 @@
     - name: Install tomcat
       apt: name=tomcat7
 
+    # FIMXE: java home is redundant
     - name: Update tomcat config
-      lineinfile: dest=/etc/default/tomcat7 regexp=^#JAVA_HOME= line=JAVA_HOME=/usr/lib/jvm/java-8-oracle
+      lineinfile: 
+        dest: /etc/default/tomcat7 
+        line: JAVA_HOME=/usr/lib/jvm/java-8-oracle
+      notify: restart tomcat
 
-    - name: Restart tomcat
-      action: shell service tomcat7 restart
+    # FIXME: see 'asnible notify'
+    # there is a service command in ansible
+    #- name: Restart tomcat
+    #  action: shell service tomcat7 restart
 
+    
+
+    #FIXME I guess it's better to put inside one apt command
     - name: Install git
       apt: name=git
 
     - name: Checkout Transaction service
       git: repo=https://github.com/BogdanTymoshenko/transaction.service.git dest=/tmp/transaction.service
 
+  # FIXME: see here{https://github.com/jcalazan/ansible-django-stack} how to properly split it for different roles
 - name: Prepare db
   hosts: all
   sudo: True
@@ -63,6 +84,20 @@
     dbpassword: postgres
 
   tasks:
+    #- name: create new role 
+    #  sudo_user: postgres
+    #  postgresql_user: name=multiad password=multiad
+
+    #- name: create new db
+    #  sudo_user: postgres
+    #  postgresql_db: name=multiad
+    #                 encoding='UTF-8'
+    #                 lc_collate='en_US.utf-8'
+    #                 lc_ctype='en_US.utf-8'
+    #                 template='template0'
+    #                 owner=multiad
+    
+    # FIXME: see sample abobe
   - name: ensure database is created
     postgresql_db: name={{dbname}}
 
@@ -79,9 +114,12 @@
   hosts: all
   sudo: True
   tasks:
+
     - name: Build Transaction service
       action: shell cd /tmp/transaction.service;./gradlew war
 
     - name: Deploy Transaction service
       action: shell mkdir /var/lib/tomcat7/webapps/transaction.service/;
        cp -r /tmp/transaction.service/RestServer/build/exploded/* /var/lib/tomcat7/webapps/transaction.service/
+
+  
